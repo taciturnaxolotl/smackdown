@@ -1,27 +1,21 @@
-# Folder structure
+# Smackdown
 
-- `src` - source code for your kaplay project
-- `dist` - distribution folder, contains your index.html, built js bundle and static assets
+A game made for [daydream](https://daydream.hackclub.com/columbus)
 
+## Dev notes
 
-## Development
+This is bundled with bun and is pretty simple to hack on.
 
-```sh
-$ bun run dev
+```bash
+bun dev # hot reloaded server on localhost
+bun run build # compiles it all to to ./dist
+bun zip # builds it and then zips it to ./dist/game.zip
 ```
 
-will start a dev server at http://localhost:8000
+<p align="center">
+	<i><code>&copy 2025-present <a href="https://github.com/taciturnaxolotl">Kieran Klukas</a></code></i>
+</p>
 
-## Distribution
-
-```sh
-$ bun run build
-```
-
-will build your js files into `dist/`
-
-```sh
-$ bun run zip
-```
-
-will build your game and package into a .zip file, you can upload to your server or itch.io / newground etc.
+<p align="center">
+	<a href="https://github.com/taciturnaxolotl/smackdown/blob/main/LICENSE.md"><img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=MIT&logoColor=d9e0ee&colorA=363a4f&colorB=b7bdf8"/></a>
+</p>
