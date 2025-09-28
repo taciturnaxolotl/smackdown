@@ -1,17 +1,19 @@
 {
-	"name": "myGame",
-	"type": "module",
-	"scripts": {
-		"build": "vite build",
-		"dev": "vite",
-		"preview": "vite preview",
-		"zip": "bun run build && mkdir -p dist && zip -r dist/game.zip dist -x \"**/.DS_Store\""
-	},
-	"dependencies": {
-		"kaplay": "^3001.0.19"
-	},
-	"devDependencies": {
-		"@types/node": "^24.5.2",
-		"vite": "^7.1.7"
-	}
+  "name": "smackdown",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "preview": "vite preview",
+    "zip": "bun run build && mkdir -p dist && zip -r dist/game.zip dist -x \"**/.DS_Store\""
+  },
+  "dependencies": {
+    "@kaplayjs/crew": "^2.0.1",
+    "kaplay": "^3001.0.19"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "vite": "^7.1.7"
+  }
 }
+
