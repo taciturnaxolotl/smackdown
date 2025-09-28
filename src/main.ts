@@ -2,8 +2,8 @@ import { crew } from "@kaplayjs/crew";
 import kaplay from "kaplay";
 
 import player from "./player";
-import { makeEnemy, type EnemyComp } from "./enemy";
-import confettiPlugin, { addConfetti } from "./confetti";
+import { makeEnemy } from "./enemy";
+import confettiPlugin from "./confetti";
 
 const k = kaplay({ plugins: [crew] });
 k.loadRoot("./"); // A good idea for Itch.io publishing later
@@ -25,6 +25,40 @@ const ground = k.add([
   k.area(),
   k.body({ isStatic: true }),
   k.color(127, 200, 255),
+]);
+
+// Create walls around the edge of the map
+// Left wall
+const leftWall = k.add([
+  k.rect(20, k.height()),
+  k.pos(-20, 0),
+  k.outline(4),
+  k.area(),
+  k.body({ isStatic: true }),
+  k.color(127, 200, 255),
+  k.opacity(0.5),
+]);
+
+// Right wall
+const rightWall = k.add([
+  k.rect(20, k.height()),
+  k.pos(k.width(), 0),
+  k.outline(4),
+  k.area(),
+  k.body({ isStatic: true }),
+  k.color(127, 200, 255),
+  k.opacity(0.5),
+]);
+
+// Top wall
+const topWall = k.add([
+  k.rect(k.width(), 20),
+  k.pos(0, -20),
+  k.outline(4),
+  k.area(),
+  k.body({ isStatic: true }),
+  k.color(127, 200, 255),
+  k.opacity(0.5),
 ]);
 
 // Create player object with components
@@ -54,7 +88,7 @@ function updateDifficulty() {
   gameTime += 1; // Increment game time by 1 second
 
   // Every 30 seconds, increase difficulty
-  if (score != 0 && score % (50 * difficultyLevel) === 0) {
+  if (score != 0 && score % (50 + 5 * difficultyLevel) === 0) {
     difficultyLevel += 1;
 
     // Increase max enemies (cap at 15)
@@ -120,20 +154,20 @@ function spawnEnemy() {
 
   switch (side) {
     case 0: // top
-      x = Math.random() * k.width();
-      y = -50;
+      x = Math.random() * (k.width() - 40) + 20; // Avoid spawning behind side walls
+      y = 10; // Just inside the top wall
       break;
     case 1: // right
-      x = k.width() + 50;
-      y = Math.random() * k.height();
+      x = k.width() - 10; // Just inside the right wall
+      y = Math.random() * (k.height() - 48 - 20) + 20; // Avoid spawning behind top wall or inside ground
       break;
     case 2: // bottom
-      x = Math.random() * k.width();
-      y = k.height() + 50;
+      x = Math.random() * (k.width() - 40) + 20; // Avoid spawning behind side walls
+      y = k.height() - 58; // Just above the ground (ground is at height-48 with height 48)
       break;
     case 3: // left
-      x = -50;
-      y = Math.random() * k.height();
+      x = 10; // Just inside the left wall
+      y = Math.random() * (k.height() - 48 - 20) + 20; // Avoid spawning behind top wall or inside ground
       break;
   }
 
@@ -146,7 +180,7 @@ function spawnEnemy() {
     enemies = enemies.filter((e) => e !== newEnemy);
 
     // Increase score when enemy is destroyed
-    score += 10 + Math.pow(difficultyLevel, 0.75);
+    score += Math.round(10 + Math.pow(difficultyLevel, 0.75));
 
     // Update score display
     scoreText.text = `Score: ${score}`;
