@@ -1,6 +1,17 @@
 # Smackdown
 
-A game made for [daydream](https://daydream.hackclub.com/columbus)
+A game made for [daydream](https://daydream.hackclub.com/columbus) with [kaplay](https://kaplayjs.com/)
+
+![Smackdown Screenshot](https://raw.githubusercontent.com/taciturnaxolotl/smackdown/refs/heads/main/docs/demo.jpeg)
+
+Are you willing to sacrifice your life to rack up more points?
+
+| Control | Action |
+|---------|--------|
+| WASD / Arrow Keys | Movement |
+| X | Ultimate ability |
+| Mouse | Direct volley |
+| Left Click | Fire |
 
 ## Dev notes
 
