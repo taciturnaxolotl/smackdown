@@ -38,7 +38,7 @@ k.scene("main", () => {
   k.setGravity(1600);
 
   // Create ground
-  const ground = k.add([
+  let ground = k.add([
     k.rect(k.width(), 48),
     k.pos(0, k.height() - 48),
     k.outline(4),
@@ -49,7 +49,7 @@ k.scene("main", () => {
 
   // Create walls around the edge of the map
   // Left wall
-  const leftWall = k.add([
+  let leftWall = k.add([
     k.rect(20, k.height()),
     k.pos(-20, 0),
     k.outline(4),
@@ -60,7 +60,7 @@ k.scene("main", () => {
   ]);
 
   // Right wall
-  const rightWall = k.add([
+  let rightWall = k.add([
     k.rect(20, k.height()),
     k.pos(k.width(), 0),
     k.outline(4),
@@ -71,7 +71,7 @@ k.scene("main", () => {
   ]);
 
   // Top wall
-  const topWall = k.add([
+  let topWall = k.add([
     k.rect(k.width(), 20),
     k.pos(0, -20),
     k.outline(4),
@@ -80,6 +80,31 @@ k.scene("main", () => {
     k.color(127, 200, 255),
     k.opacity(0.5),
   ]);
+
+  // Handle window resize
+  k.onResize(() => {
+    // Update ground
+    if (ground.exists()) {
+      ground.width = k.width();
+      ground.pos.y = k.height() - 48;
+    }
+
+    // Update left wall
+    if (leftWall.exists()) {
+      leftWall.height = k.height();
+    }
+
+    // Update right wall
+    if (rightWall.exists()) {
+      rightWall.height = k.height();
+      rightWall.pos.x = k.width();
+    }
+
+    // Update top wall
+    if (topWall.exists()) {
+      topWall.width = k.width();
+    }
+  });
 
   // Create player object with components
   const playerObj = k.add([
@@ -337,10 +362,10 @@ k.scene("main", () => {
 // Game over scene
 k.scene("gameOver", (score: number) => {
   // Background
-  k.add([k.rect(k.width(), k.height()), k.color(0, 0, 0), k.opacity(0.7)]);
+  let background = k.add([k.rect(k.width(), k.height()), k.color(0, 0, 0), k.opacity(0.7)]);
 
   // Game over text
-  k.add([
+  let gameOverText = k.add([
     k.text("GAME OVER", { size: 64 }),
     k.pos(k.width() / 2, k.height() / 3),
     k.anchor("center"),
@@ -348,7 +373,7 @@ k.scene("gameOver", (score: number) => {
   ]);
 
   // Score display
-  k.add([
+  let scoreDisplay = k.add([
     k.text(`Final Score: ${score}`, { size: 36 }),
     k.pos(k.width() / 2, k.height() / 2),
     k.anchor("center"),
@@ -366,12 +391,45 @@ k.scene("gameOver", (score: number) => {
   ]);
 
   // Restart text
-  k.add([
+  let restartText = k.add([
     k.text("RESTART", { size: 24 }),
     k.pos(k.width() / 2, (k.height() * 2) / 3),
     k.anchor("center"),
     k.color(255, 255, 255),
   ]);
+
+  // Handle window resize
+  k.onResize(() => {
+    // Update background
+    if (background.exists()) {
+      background.width = k.width();
+      background.height = k.height();
+    }
+
+    // Update game over text position
+    if (gameOverText.exists()) {
+      gameOverText.pos.x = k.width() / 2;
+      gameOverText.pos.y = k.height() / 3;
+    }
+
+    // Update score display position
+    if (scoreDisplay.exists()) {
+      scoreDisplay.pos.x = k.width() / 2;
+      scoreDisplay.pos.y = k.height() / 2;
+    }
+
+    // Update restart button position
+    if (restartBtn.exists()) {
+      restartBtn.pos.x = k.width() / 2;
+      restartBtn.pos.y = (k.height() * 2) / 3;
+    }
+
+    // Update restart text position
+    if (restartText.exists()) {
+      restartText.pos.x = k.width() / 2;
+      restartText.pos.y = (k.height() * 2) / 3;
+    }
+  });
 
   // Restart on button click
   restartBtn.onClick(() => {
