@@ -307,9 +307,14 @@ function player(k: KAPLAYCtx): PlayerComp {
 
           // Damage all enemies with high damage
           const enemies = k.get("enemy");
+          let enemiesKilled = 0;
+          
           enemies.forEach((enemy) => {
             const dist = k.vec2(enemy.pos).dist(this.pos);
             if (dist < explosionRadius) {
+              // Count enemies killed
+              enemiesKilled++;
+              
               // Instant kill any enemy within the explosion radius
               (enemy as any).damage(1000); // Extremely high damage to ensure death
 
@@ -321,6 +326,61 @@ function player(k: KAPLAYCtx): PlayerComp {
               });
             }
           });
+          
+          // Calculate bonus score based on health and enemies killed
+          // Higher health = higher score multiplier
+          const healthPercent = health / maxHealth;
+          const scoreBonus = Math.round(500 * healthPercent * (1 + enemiesKilled * 0.5));
+          
+          // Add score bonus
+          if (scoreBonus > 0) {
+            // Get score object
+            const scoreObj = k.get("score")[0];
+            if (scoreObj) {
+              // Extract current score
+              const currentScore = parseInt(scoreObj.text.split(": ")[1]);
+              // Add bonus
+              const newScore = currentScore + scoreBonus;
+              // Update score display
+              scoreObj.text = `Score: ${newScore}`;
+              
+              // Update the actual score variable in the game scene
+              // This is needed for the game over screen to show the correct score
+              const gameScores = k.get("game-score-tracker");
+              if (gameScores.length > 0) {
+                gameScores[0].updateScore(newScore);
+              }
+              
+              // Show bonus text
+              const bonusText = k.add([
+                k.text(`+${scoreBonus} ULTIMATE BONUS!`, { size: 32 }),
+                k.pos(k.width() / 2, k.height() / 2 - 100),
+                k.anchor("center"),
+                k.color(255, 255, 0),
+                k.outline(2, k.rgb(0, 0, 0)),
+                k.z(100),
+                k.opacity(1),
+              ]);
+              
+              // Fade out and destroy the text
+              k.tween(
+                1,
+                0,
+                1.5,
+                (v) => {
+                  if (bonusText.exists()) {
+                    bonusText.opacity = v;
+                    bonusText.pos.y -= 0.5; // Float upward
+                  }
+                },
+                k.easings.easeInQuad,
+              );
+              
+              k.wait(1.5, () => {
+                if (bonusText.exists()) bonusText.destroy();
+              });
+            }
+          }
 
           // Kill the player (sacrifice)
           this.damage(health); // Use current health to ensure death
