@@ -91,58 +91,67 @@ k.scene("main", () => {
   let score = 0;
 
   const scoreText = k.add([k.text(`Score: ${score}`), k.pos(16, 16), "score"]);
-  
+
   // Add a hidden score tracker that can be accessed by other components
   const scoreTracker = k.add([
     k.pos(0, 0),
     "game-score-tracker",
     {
       score: score,
+      difficultyLevel: difficultyLevel,
       updateScore(newScore: number) {
         this.score = newScore;
         score = newScore; // Update the main score variable
-      }
-    }
+      },
+      updateDifficulty(newLevel: number) {
+        this.difficultyLevel = newLevel;
+      },
+    },
   ]);
 
   // Difficulty scaling
   function updateDifficulty() {
     if (!gameActive) return;
-    
+
     gameTime += 1; // Increment game time by 1 second
-    
+
     // Check if it's time to increase difficulty based on score
     // Use a formula that scales with difficulty level
     const scoreThreshold = 50 * difficultyLevel;
-    
+
     if (score >= scoreThreshold && score % scoreThreshold < 10) {
       // Only trigger once when crossing the threshold
       if (!k.get("level-up-text").length) {
         difficultyLevel += 1;
-        
+
+        // Update difficulty in tracker
+        const tracker = k.get("game-score-tracker")[0];
+        if (tracker) {
+          tracker.updateDifficulty(difficultyLevel);
+        }
+
         // Increase max enemies (cap at 15)
         maxEnemies = Math.min(initialMaxEnemies + difficultyLevel, 15);
-        
+
         // Decrease spawn interval (minimum 0.5 seconds)
         spawnInterval = Math.max(
           initialSpawnInterval - difficultyLevel * 0.2,
-          0.5
+          0.5,
         );
-        
+
         console.log(
-          `Difficulty increased to level ${difficultyLevel}. Max enemies: ${maxEnemies}, Spawn interval: ${spawnInterval}s`
+          `Difficulty increased to level ${difficultyLevel}. Max enemies: ${maxEnemies}, Spawn interval: ${spawnInterval}s`,
         );
-        
+
         // Cancel previous spawn loop and start a new one with updated interval
-        k.cancel("spawnEnemy");
-        k.loop(spawnInterval, spawnEnemy, "spawnEnemy");
-        
+        k.loop(spawnInterval, spawnEnemy);
+
         // Visual feedback for difficulty increase
         const screenCenter = k.vec2(k.width() / 2, k.height() / 2);
         if (k.addConfetti) {
           k.addConfetti(screenCenter);
         }
-        
+
         // Add difficulty level text
         const levelText = k.add([
           k.text(`Difficulty Level ${difficultyLevel}!`, { size: 32 }),
@@ -152,9 +161,9 @@ k.scene("main", () => {
           k.outline(2, k.rgb(0, 0, 0)),
           k.z(100),
           k.opacity(1),
-          "level-up-text"
+          "level-up-text",
         ]);
-        
+
         // Fade out and destroy the text
         k.tween(
           1,
@@ -165,9 +174,9 @@ k.scene("main", () => {
               levelText.opacity = v;
             }
           },
-          k.easings.easeInQuad
+          k.easings.easeInQuad,
         );
-        
+
         k.wait(2, () => {
           if (levelText.exists()) levelText.destroy();
         });
@@ -188,11 +197,12 @@ k.scene("main", () => {
     // Random position at the edges of the screen
     // As difficulty increases, add chance to spawn in center
     let spawnSide;
-    
+
     // Calculate center spawn chance based on difficulty level
     // 0% at level 1-2, increasing to 30% at level 10+
-    const centerSpawnChance = difficultyLevel <= 2 ? 0 : Math.min((difficultyLevel - 2) * 0.04, 0.3);
-    
+    const centerSpawnChance =
+      difficultyLevel <= 2 ? 0 : Math.min((difficultyLevel - 2) * 0.04, 0.3);
+
     // Determine spawn location
     if (Math.random() < centerSpawnChance) {
       // Center spawn
@@ -201,7 +211,7 @@ k.scene("main", () => {
       // Side spawn (left or right)
       spawnSide = Math.floor(Math.random() * 2); // 0: left, 1: right
     }
-    
+
     let x = 0,
       y = 0;
 
@@ -235,11 +245,47 @@ k.scene("main", () => {
 
       // Update score display
       scoreText.text = `Score: ${score}`;
-      
+
       // Update score tracker
       const tracker = k.get("game-score-tracker")[0];
       if (tracker) {
         tracker.score = score;
+      }
+
+      // Heal player when killing an enemy
+      const player = k.get("player")[0];
+      if (player && player.heal) {
+        // Heal amount is 5 health points
+        const healAmount = 5;
+        player.heal(healAmount);
+
+        // Show healing effect
+        const healText = k.add([
+          k.text(`+${healAmount} HP`, { size: 16 }),
+          k.pos(player.pos.x, player.pos.y - 60),
+          k.anchor("center"),
+          k.color(0, 255, 0),
+          k.z(100),
+          k.opacity(1),
+        ]);
+
+        // Float upward and fade out
+        k.tween(
+          1,
+          0,
+          0.8,
+          (v) => {
+            if (healText.exists()) {
+              healText.opacity = v;
+              healText.pos.y -= 0.5;
+            }
+          },
+          k.easings.easeOutQuad,
+        );
+
+        k.wait(0.8, () => {
+          if (healText.exists()) healText.destroy();
+        });
       }
 
       if (Math.random() < 0.2 * Math.pow(difficultyLevel, 0.75)) spawnEnemy();
@@ -247,7 +293,7 @@ k.scene("main", () => {
   }
 
   // Start spawning enemies
-  k.loop(spawnInterval, spawnEnemy, "spawnEnemy");
+  k.loop(spawnInterval, spawnEnemy);
 
   // Game loop
   k.onUpdate(() => {
@@ -258,7 +304,7 @@ k.scene("main", () => {
   // Listen for game over event
   playerObj.on("death", () => {
     gameActive = false;
-    
+
     // Get final score from tracker
     const tracker = k.get("game-score-tracker")[0];
     if (tracker) {
@@ -266,9 +312,6 @@ k.scene("main", () => {
     } else {
       finalScore = score;
     }
-    
-    // Stop enemy spawning
-    k.cancel("spawnEnemy");
 
     // Wait a moment before showing game over screen
     k.wait(2, () => {

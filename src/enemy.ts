@@ -161,7 +161,14 @@ export function enemy(k: KAPLAYCtx, target: GameObj) {
 
           // Damage player
           if (playerObj.damage) {
-            playerObj.damage(5);
+            // Get current difficulty level to scale damage
+            const difficultyLevel = k.get("game-score-tracker")[0]?.difficultyLevel || 1;
+            
+            // Base damage is 5, increases with difficulty
+            const baseDamage = 5;
+            const scaledDamage = Math.round(baseDamage + (difficultyLevel - 1) * 2);
+            
+            playerObj.damage(scaledDamage);
           }
 
           // Knockback effect

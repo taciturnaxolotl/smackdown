@@ -7,6 +7,7 @@ interface PlayerComp extends Comp {
   health: number;
   maxHealth: number;
   damage(amount: number): void;
+  heal(amount: number): void;
   attack(): void;
   update(): void;
 }
@@ -108,6 +109,26 @@ function player(k: KAPLAYCtx): PlayerComp {
 
         // Emit death event for game over handling
         this.trigger("death");
+      }
+    },
+
+    // Heal player
+    heal(this: GameObj, amount: number) {
+      // Add health but don't exceed max health
+      health = Math.min(health + amount, maxHealth);
+      
+      // Flash green when healed
+      this.color = k.rgb(0, 255, 0);
+      
+      // Reset color after a short time
+      k.wait(0.1, () => {
+        this.color = k.rgb();
+      });
+      
+      // Update health bar
+      if (healthBar) {
+        const healthPercent = Math.max(0, health / maxHealth);
+        healthBar.width = 60 * healthPercent;
       }
     },
 
