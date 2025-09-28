@@ -45,36 +45,38 @@ let initialSpawnInterval = 3; // seconds
 let spawnInterval = initialSpawnInterval;
 let gameTime = 0; // Track game time in seconds
 let difficultyLevel = 1;
-let spawnLoopId: any = null;
+let score = 0;
+
+const scoreText = k.add([k.text(`Score: ${score}`), k.pos(16, 16)]);
 
 // Difficulty scaling
 function updateDifficulty() {
   gameTime += 1; // Increment game time by 1 second
-  
+
   // Every 30 seconds, increase difficulty
-  if (gameTime % 30 === 0) {
+  if (score != 0 && score % (50 * difficultyLevel) === 0) {
     difficultyLevel += 1;
-    
+
     // Increase max enemies (cap at 15)
-    maxEnemies = Math.min(initialMaxEnemies + difficultyLevel, 15);
-    
+    maxEnemies = Math.min(initialMaxEnemies + difficultyLevel * 3, 15);
+
     // Decrease spawn interval (minimum 0.5 seconds)
-    spawnInterval = Math.max(initialSpawnInterval - (difficultyLevel * 0.3), 0.5);
-    
-    console.log(`Difficulty increased to level ${difficultyLevel}. Max enemies: ${maxEnemies}, Spawn interval: ${spawnInterval}s`);
-    
+    spawnInterval = Math.max(initialSpawnInterval - difficultyLevel * 0.3, 0.5);
+
+    console.log(
+      `Difficulty increased to level ${difficultyLevel}. Max enemies: ${maxEnemies}, Spawn interval: ${spawnInterval}s`,
+    );
+
     // Cancel previous spawn loop and start a new one with updated interval
-    if (spawnLoopId !== null) {
-      k.cancel(spawnLoopId);
-    }
-    spawnLoopId = k.loop(spawnInterval, spawnEnemy);
-    
+    k.cancel();
+    k.loop(spawnInterval, spawnEnemy);
+
     // Visual feedback for difficulty increase
     const screenCenter = k.vec2(k.width() / 2, k.height() / 2);
     if (k.addConfetti) {
       k.addConfetti(screenCenter);
     }
-    
+
     // Add difficulty level text
     const levelText = k.add([
       k.text(`Difficulty Level ${difficultyLevel}!`, { size: 32 }),
@@ -85,7 +87,7 @@ function updateDifficulty() {
       k.z(100),
       k.opacity(1),
     ]);
-    
+
     // Fade out and destroy the text
     k.tween(
       1,
@@ -96,7 +98,7 @@ function updateDifficulty() {
       },
       k.easings.easeInQuad,
     );
-    
+
     k.wait(2, () => {
       levelText.destroy();
     });
@@ -113,7 +115,8 @@ function spawnEnemy() {
 
   // Random position at the edges of the screen
   const side = Math.floor(Math.random() * 4); // 0: top, 1: right, 2: bottom, 3: left
-  let x, y;
+  let x = 0,
+    y = 0;
 
   switch (side) {
     case 0: // top
@@ -141,11 +144,19 @@ function spawnEnemy() {
   // Remove from array when destroyed
   newEnemy.on("destroy", () => {
     enemies = enemies.filter((e) => e !== newEnemy);
+
+    // Increase score when enemy is destroyed
+    score += 10 + Math.pow(difficultyLevel, 0.75);
+
+    // Update score display
+    scoreText.text = `Score: ${score}`;
+
+    if (Math.random() < 0.5) spawnEnemy();
   });
 }
 
 // Start spawning enemies
-spawnLoopId = k.loop(spawnInterval, spawnEnemy);
+k.loop(spawnInterval, spawnEnemy);
 
 // Game loop
 k.onUpdate(() => {

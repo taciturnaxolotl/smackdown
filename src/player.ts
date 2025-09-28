@@ -222,14 +222,20 @@ function player(k: KAPLAYCtx): PlayerComp {
         enemies.forEach((enemy) => {
           const dist = k.vec2(enemy.pos).dist(clampedPos);
           if (dist < explosionRadius) {
-            // Calculate damage based on distance from center
-            // At center (dist = 0): 70 damage (70% of enemy health)
-            // At edge (dist = explosionRadius): 20 damage (20% of enemy health)
-            const damagePercent = 0.7 - (0.5 * dist) / explosionRadius;
-            const damage = Math.floor(100 * damagePercent); // 100 is enemy max health
+            // Normalize distance to 0-1 range
+            const normalizedDist = dist / explosionRadius;
+
+            const maxDamage = 80;
+            const minDamage = 10;
+            const logFalloff = Math.log(10 * normalizedDist) / Math.log(20);
+            const damagePercent = 1 - logFalloff;
+            const damage = Math.max(
+              Math.floor(maxDamage * damagePercent),
+              minDamage,
+            );
 
             console.log(
-              `Direct damage to enemy: ${damage}, distance: ${dist}, percent: ${damagePercent}`,
+              `Explosion damage to enemy: ${damage}, distance: ${dist}, normalized: ${normalizedDist}, falloff: ${logFalloff}`,
             );
             // Add type assertion to tell TypeScript that enemy has a damage method
             (enemy as any).damage(damage);

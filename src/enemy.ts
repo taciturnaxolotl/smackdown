@@ -116,7 +116,7 @@ export function enemy(k: KAPLAYCtx, target: GameObj) {
         k.color(255, 0, 0),
         k.z(1),
       ]);
-      
+
       // Handle collisions with sword
       this.onCollide("sword", (sword) => {
         if (sword.isAttacking && !isHit) {
@@ -151,27 +151,29 @@ export function enemy(k: KAPLAYCtx, target: GameObj) {
           this.flipX = normalizedDir.x < 0;
         }
       }
-      
+
       // Check for collision with player and apply damage if in contact
       // Only apply damage if cooldown has passed
       if (k.time() - lastDamageTime > DAMAGE_COOLDOWN) {
         const playerObj = k.get("player")[0];
         if (playerObj && this.isColliding(playerObj)) {
           lastDamageTime = k.time();
-          
+
           // Damage player
           if (playerObj.damage) {
             playerObj.damage(5);
           }
-          
+
           // Knockback effect
           const knockback = 200;
-          const knockbackDir = k.vec2(
-            playerObj.pos.x - this.pos.x,
-            playerObj.pos.y - this.pos.y
-          ).unit();
-          
-          playerObj.move(knockbackDir.x * knockback, knockbackDir.y * knockback);
+          const knockbackDir = k
+            .vec2(playerObj.pos.x - this.pos.x, playerObj.pos.y - this.pos.y)
+            .unit();
+
+          playerObj.move(
+            knockbackDir.x * knockback,
+            knockbackDir.y * knockback,
+          );
         }
       }
 
@@ -206,7 +208,7 @@ export function makeEnemy(k: KAPLAYCtx, target: GameObj, x: number, y: number) {
     enemy(k, target),
     "enemy", // Add tag for collision detection
   ]);
-  
+
   return newEnemy;
 }
 
