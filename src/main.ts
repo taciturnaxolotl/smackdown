@@ -4,6 +4,7 @@ import kaplay from "kaplay";
 import player from "./player";
 import { makeEnemy } from "./enemy";
 import confettiPlugin from "./confetti";
+import setupSoundSystem from "./sound";
 
 const k = kaplay({ plugins: [crew] });
 k.loadRoot("./"); // A good idea for Itch.io publishing later
@@ -15,6 +16,13 @@ k.loadCrew("sprite", "bean"); // Using bean sprite for enemies
 const confetti = confettiPlugin(k);
 k.addConfetti = confetti.addConfetti;
 
+// Setup sound system
+const sound = setupSoundSystem(k);
+sound.preloadSounds();
+
+// Make sound system globally available
+(window as any).gameSound = sound;
+
 // Game state
 let gameActive = true;
 let finalScore = 0;
@@ -23,6 +31,9 @@ let finalScore = 0;
 k.scene("main", () => {
   // Reset game state
   gameActive = true;
+
+  // Start background music
+  sound.playRandomMusic();
 
   k.setGravity(1600);
 
@@ -123,6 +134,9 @@ k.scene("main", () => {
       // Only trigger once when crossing the threshold
       if (!k.get("level-up-text").length) {
         difficultyLevel += 1;
+
+        // Play level up sound effect
+        sound.playSfx("levelUp");
 
         // Update difficulty in tracker
         const tracker = k.get("game-score-tracker")[0];

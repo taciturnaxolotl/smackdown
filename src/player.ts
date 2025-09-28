@@ -1,6 +1,13 @@
 import type { KAPLAYCtx, Comp, GameObj } from "kaplay";
 import { Vec2 } from "kaplay";
 
+// Make sound system available to the player component
+declare global {
+  interface Window {
+    gameSound: any;
+  }
+}
+
 // Define player component type
 interface PlayerComp extends Comp {
   speed: number;
@@ -67,6 +74,13 @@ function player(k: KAPLAYCtx): PlayerComp {
     return k.vec2(center.x + dx * ratio, center.y + dy * ratio);
   };
 
+  // Helper function to play sound if available
+  const playSound = (type: string, options = {}) => {
+    if (window.gameSound) {
+      window.gameSound.playSfx(type, options);
+    }
+  };
+
   return {
     id: "player",
     require: ["body", "area", "pos"],
@@ -81,6 +95,9 @@ function player(k: KAPLAYCtx): PlayerComp {
       if (isHit) return; // Prevent taking damage too quickly
 
       health -= amount;
+
+      // Play hit sound
+      playSound("hit", { volume: 0.4, detune: 300 });
 
       // Flash red when hit
       isHit = true;
@@ -107,6 +124,9 @@ function player(k: KAPLAYCtx): PlayerComp {
         k.addKaboom(this.pos, { scale: 2 });
         k.shake(20);
 
+        // Play death sound
+        playSound("explosion", { volume: 1, detune: -300 });
+
         // Emit death event for game over handling
         this.trigger("death");
       }
@@ -116,15 +136,18 @@ function player(k: KAPLAYCtx): PlayerComp {
     heal(this: GameObj, amount: number) {
       // Add health but don't exceed max health
       health = Math.min(health + amount, maxHealth);
-      
+
+      // Play heal sound
+      playSound("coin", { volume: 0.2, detune: 200 });
+
       // Flash green when healed
       this.color = k.rgb(0, 255, 0);
-      
+
       // Reset color after a short time
       k.wait(0.1, () => {
         this.color = k.rgb();
       });
-      
+
       // Update health bar
       if (healthBar) {
         const healthPercent = Math.max(0, health / maxHealth);
@@ -201,11 +224,15 @@ function player(k: KAPLAYCtx): PlayerComp {
       this.onKeyPress(["space", "up", "w"], () => {
         if (this.isGrounded()) {
           this.jump(jumpForce);
+          playSound("coin", { volume: 0.3, detune: 400 });
         }
       });
 
       // Attack with X key - now ultimate move
       this.onKeyPress("x", () => {
+        // Play charging sound
+        playSound("windup", { volume: 0.5, detune: 500 });
+
         // Create visual effects for charging up
         const chargeEffect = k.add([
           k.circle(50),
@@ -220,7 +247,7 @@ function player(k: KAPLAYCtx): PlayerComp {
         k.tween(
           50,
           200,
-          1.5,
+          1.4,
           (v) => {
             if (chargeEffect.exists()) {
               chargeEffect.radius = v;
@@ -250,7 +277,7 @@ function player(k: KAPLAYCtx): PlayerComp {
         });
 
         // After delay, trigger the ultimate explosion
-        k.wait(2, () => {
+        k.wait(1.5, () => {
           if (chargeEffect.exists()) chargeEffect.destroy();
           if (warningText.exists()) warningText.destroy();
 
@@ -277,6 +304,9 @@ function player(k: KAPLAYCtx): PlayerComp {
             );
           }
 
+          // Play massive explosion sound
+          playSound("explosion", { volume: 1.0, detune: -600 });
+
           // Visual effects
           k.addKaboom(this.pos, {
             scale: 5,
@@ -290,6 +320,12 @@ function player(k: KAPLAYCtx): PlayerComp {
             k.wait(i * 0.1, () => {
               k.addKaboom(k.vec2(this.pos).add(offset), {
                 scale: 2 + Math.random() * 2,
+              });
+
+              // Play additional explosion sounds with slight delay
+              playSound("explosion", {
+                volume: 0.7,
+                detune: -300 + Math.random() * 200,
               });
             });
           }
@@ -329,13 +365,13 @@ function player(k: KAPLAYCtx): PlayerComp {
           // Damage all enemies with high damage
           const enemies = k.get("enemy");
           let enemiesKilled = 0;
-          
+
           enemies.forEach((enemy) => {
             const dist = k.vec2(enemy.pos).dist(this.pos);
             if (dist < explosionRadius) {
               // Count enemies killed
               enemiesKilled++;
-              
+
               // Instant kill any enemy within the explosion radius
               (enemy as any).damage(1000); // Extremely high damage to ensure death
 
@@ -344,15 +380,23 @@ function player(k: KAPLAYCtx): PlayerComp {
                 k.addKaboom(enemy.pos, {
                   scale: 1 + Math.random(),
                 });
+
+                // Play enemy death sound
+                playSound("explosion", {
+                  volume: 0.5,
+                  detune: Math.random() * 400 - 200,
+                });
               });
             }
           });
-          
+
           // Calculate bonus score based on health and enemies killed
           // Higher health = higher score multiplier
           const healthPercent = health / maxHealth;
-          const scoreBonus = Math.round(500 * healthPercent * (1 + enemiesKilled * 0.5));
-          
+          const scoreBonus = Math.round(
+            500 * healthPercent * (1 + enemiesKilled * 0.5),
+          );
+
           // Add score bonus
           if (scoreBonus > 0) {
             // Get score object
@@ -364,14 +408,17 @@ function player(k: KAPLAYCtx): PlayerComp {
               const newScore = currentScore + scoreBonus;
               // Update score display
               scoreObj.text = `Score: ${newScore}`;
-              
+
               // Update the actual score variable in the game scene
               // This is needed for the game over screen to show the correct score
               const gameScores = k.get("game-score-tracker");
               if (gameScores.length > 0) {
                 gameScores[0].updateScore(newScore);
               }
-              
+
+              // Play bonus sound
+              playSound("coin", { volume: 0.8 });
+
               // Show bonus text
               const bonusText = k.add([
                 k.text(`+${scoreBonus} ULTIMATE BONUS!`, { size: 32 }),
@@ -382,7 +429,7 @@ function player(k: KAPLAYCtx): PlayerComp {
                 k.z(100),
                 k.opacity(1),
               ]);
-              
+
               // Fade out and destroy the text
               k.tween(
                 1,
@@ -396,7 +443,7 @@ function player(k: KAPLAYCtx): PlayerComp {
                 },
                 k.easings.easeInQuad,
               );
-              
+
               k.wait(1.5, () => {
                 if (bonusText.exists()) bonusText.destroy();
               });
@@ -422,6 +469,9 @@ function player(k: KAPLAYCtx): PlayerComp {
         );
 
         console.log("Creating explosion at", clampedPos.x, clampedPos.y);
+
+        // Play explosion sound
+        playSound("explosion", { volume: 0.6 });
 
         // Create visual explosion effect
         k.addKaboom(clampedPos);
@@ -478,6 +528,9 @@ function player(k: KAPLAYCtx): PlayerComp {
       if (isAttacking) return;
 
       isAttacking = true;
+
+      // Play sword swing sound
+      playSound("explosion", { volume: 1, detune: 800 });
 
       if (sword) {
         // Set sword to attacking state for collision detection

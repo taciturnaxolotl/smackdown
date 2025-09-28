@@ -37,6 +37,11 @@ export function enemy(k: KAPLAYCtx, target: GameObj) {
       health -= amount;
       console.log(`Enemy damaged: ${amount}, health: ${health}`);
 
+      // Play hit sound
+      if (typeof (window as any).gameSound !== 'undefined') {
+        (window as any).gameSound.playSfx('hit', { volume: 0.3, detune: 200 });
+      }
+
       // Flash red when hit
       isHit = true;
       this.color = k.rgb(255, 0, 0);
@@ -62,6 +67,11 @@ export function enemy(k: KAPLAYCtx, target: GameObj) {
 
     // Enemy death
     die(this: GameObj) {
+      // Play death sound
+      if (typeof (window as any).gameSound !== 'undefined') {
+        (window as any).gameSound.playSfx('death', { volume: 0.4, detune: -100 });
+      }
+
       // Add confetti effect only (no kaboom)
       if (k.addConfetti) {
         k.addConfetti(this.pos);
