@@ -99,9 +99,15 @@ function player(k: KAPLAYCtx): PlayerComp {
 
       // Check if player is dead
       if (health <= 0) {
-        // Game over logic here
-        k.addKaboom(this.pos);
+        // Game over logic
+        health = 0; // Ensure health doesn't go negative
+
+        // Create dramatic death effect
+        k.addKaboom(this.pos, { scale: 2 });
         k.shake(20);
+
+        // Emit death event for game over handling
+        this.trigger("death");
       }
     },
 
@@ -177,9 +183,148 @@ function player(k: KAPLAYCtx): PlayerComp {
         }
       });
 
-      // Attack with X key
+      // Attack with X key - now ultimate move
       this.onKeyPress("x", () => {
-        this.attack();
+        // Create visual effects for charging up
+        const chargeEffect = k.add([
+          k.circle(50),
+          k.pos(this.pos),
+          k.color(255, 0, 0),
+          k.opacity(0.5),
+          k.anchor("center"),
+          k.z(0.8),
+        ]);
+
+        // Grow the charge effect
+        k.tween(
+          50,
+          200,
+          1.5,
+          (v) => {
+            if (chargeEffect.exists()) {
+              chargeEffect.radius = v;
+              chargeEffect.opacity = 0.5 + Math.sin(k.time() * 10) * 0.2;
+            }
+          },
+          k.easings.easeInQuad,
+        );
+
+        // Add warning text
+        const warningText = k.add([
+          k.text("ULTIMATE CHARGING...", { size: 24 }),
+          k.pos(k.width() / 2, 100),
+          k.color(255, 50, 50),
+          k.anchor("center"),
+          k.z(100),
+        ]);
+
+        // Flash the warning text
+        k.loop(0.2, () => {
+          if (warningText.exists()) {
+            warningText.color =
+              warningText.color === k.rgb(255, 50, 50)
+                ? k.rgb(255, 100, 100)
+                : k.rgb(255, 50, 50);
+          }
+        });
+
+        // After delay, trigger the ultimate explosion
+        k.wait(2, () => {
+          if (chargeEffect.exists()) chargeEffect.destroy();
+          if (warningText.exists()) warningText.destroy();
+
+          // Create massive explosion
+          const explosionRadius = 500; // Much larger than normal explosions
+
+          // Animate sword for dramatic effect
+          if (sword) {
+            // Make sword glow red
+            sword.color = k.rgb(255, 0, 0);
+
+            // Dramatic sword spin
+            k.tween(
+              0,
+              720,
+              1,
+              (v) => {
+                if (sword) {
+                  sword.angle = v;
+                  sword.scaleTo(1 + Math.sin(k.time() * 10) * 0.3);
+                }
+              },
+              k.easings.easeInOutQuad,
+            );
+          }
+
+          // Visual effects
+          k.addKaboom(this.pos, {
+            scale: 5,
+          });
+
+          // Add multiple explosion effects for dramatic impact
+          for (let i = 0; i < 8; i++) {
+            const angle = Math.PI * 2 * (i / 8);
+            const offset = k.vec2(Math.cos(angle) * 100, Math.sin(angle) * 100);
+
+            k.wait(i * 0.1, () => {
+              k.addKaboom(k.vec2(this.pos).add(offset), {
+                scale: 2 + Math.random() * 2,
+              });
+            });
+          }
+
+          // Heavy screen shake
+          k.shake(40);
+
+          // Create explosion area for damage
+          const explosion = k.add([
+            k.circle(explosionRadius),
+            k.pos(this.pos),
+            k.color(255, 50, 50),
+            k.area(),
+            k.anchor("center"),
+            k.opacity(0.6),
+            "ultimate-explosion",
+          ]);
+
+          // Fade out explosion
+          k.tween(
+            0.6,
+            0,
+            1.5,
+            (v) => {
+              if (explosion.exists()) {
+                explosion.opacity = v;
+              }
+            },
+            k.easings.easeOutQuad,
+          );
+
+          // Destroy explosion after animation
+          k.wait(1.5, () => {
+            if (explosion.exists()) explosion.destroy();
+          });
+
+          // Damage all enemies with high damage
+          const enemies = k.get("enemy");
+          enemies.forEach((enemy) => {
+            const dist = k.vec2(enemy.pos).dist(this.pos);
+            if (dist < explosionRadius) {
+              // Instant kill any enemy within the explosion radius
+              (enemy as any).damage(1000); // Extremely high damage to ensure death
+
+              // Add additional explosion effect at enemy position
+              k.wait(Math.random() * 0.3, () => {
+                k.addKaboom(enemy.pos, {
+                  scale: 1 + Math.random(),
+                });
+              });
+            }
+          });
+
+          // Kill the player (sacrifice)
+          this.damage(health); // Use current health to ensure death
+        });
       });
 
       // Attack, kaboom and shake on click
@@ -427,8 +572,7 @@ function player(k: KAPLAYCtx): PlayerComp {
 
           // Apply scale
           if (arrowPoints[i].scale) {
-            arrowPoints[i].scale.x = size / 3; // Divide by default size (3)
-            arrowPoints[i].scale.y = size / 3;
+            arrowPoints[i].scaleTo(size / 3); // Divide by default size (3)
           }
         }
 
@@ -439,8 +583,7 @@ function player(k: KAPLAYCtx): PlayerComp {
 
         // Make arrow head larger
         if (arrowHead.scale) {
-          arrowHead.scale.x = 3;
-          arrowHead.scale.y = 3;
+          arrowHead.scaleTo(3);
         }
       }
     },
